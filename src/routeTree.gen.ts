@@ -13,6 +13,7 @@ import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as PredictRouteImport } from './routes/predict'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
 const StatisticsRoute = StatisticsRouteImport.update({
@@ -35,6 +36,11 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/history': typeof HistoryRoute
   '/map': typeof MapRoute
   '/predict': typeof PredictRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/history': typeof HistoryRoute
   '/map': typeof MapRoute
   '/predict': typeof PredictRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/history': typeof HistoryRoute
   '/map': typeof MapRoute
   '/predict': typeof PredictRoute
@@ -65,14 +74,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history' | '/map' | '/predict' | '/statistics'
+  fullPaths: '/' | '/about' | '/history' | '/map' | '/predict' | '/statistics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history' | '/map' | '/predict' | '/statistics'
-  id: '__root__' | '/' | '/history' | '/map' | '/predict' | '/statistics'
+  to: '/' | '/about' | '/history' | '/map' | '/predict' | '/statistics'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/history'
+    | '/map'
+    | '/predict'
+    | '/statistics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   HistoryRoute: typeof HistoryRoute
   MapRoute: typeof MapRoute
   PredictRoute: typeof PredictRoute
@@ -109,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +145,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   HistoryRoute: HistoryRoute,
   MapRoute: MapRoute,
   PredictRoute: PredictRoute,
