@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
+import type * as LType from "leaflet";
 import { motion } from "framer-motion";
 import {
   Maximize2, Ruler, Square, Hexagon, Search, Download, Layers, MapPin, Trash2,
@@ -35,13 +35,14 @@ type Mode = "none" | "marker" | "measure" | "polygon" | "rectangle";
 
 function MapPage() {
   const mapDiv = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const baseLayerRef = useRef<L.TileLayer | null>(null);
-  const drawLayerRef = useRef<L.FeatureGroup | null>(null);
-  const measureLayerRef = useRef<L.LayerGroup | null>(null);
-  const measurePointsRef = useRef<L.LatLng[]>([]);
-  const polyPointsRef = useRef<L.LatLng[]>([]);
-  const rectStartRef = useRef<L.LatLng | null>(null);
+  const LRef = useRef<typeof LType | null>(null);
+  const mapRef = useRef<LType.Map | null>(null);
+  const baseLayerRef = useRef<LType.TileLayer | null>(null);
+  const drawLayerRef = useRef<LType.FeatureGroup | null>(null);
+  const measureLayerRef = useRef<LType.LayerGroup | null>(null);
+  const measurePointsRef = useRef<LType.LatLng[]>([]);
+  const polyPointsRef = useRef<LType.LatLng[]>([]);
+  const rectStartRef = useRef<LType.LatLng | null>(null);
   const modeRef = useRef<Mode>("none");
 
   const [base, setBase] = useState<BaseKey>("dark");
@@ -56,33 +57,38 @@ function MapPage() {
 
   useEffect(() => {
     if (!mapDiv.current || mapRef.current) return;
-    const map = L.map(mapDiv.current, { zoomControl: true, preferCanvas: true }).setView([20, 0], 3);
-    mapRef.current = map;
-    baseLayerRef.current = L.tileLayer(BASE_MAPS.dark.url, { attribution: BASE_MAPS.dark.attribution }).addTo(map);
-    drawLayerRef.current = L.featureGroup().addTo(map);
-    measureLayerRef.current = L.layerGroup().addTo(map);
-
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      setClick({ lat: e.latlng.lat, lng: e.latlng.lng });
-      handleMapClick(e.latlng);
-    });
-
-    return () => { map.remove(); mapRef.current = null; };
-     
+    let cancelled = false;
+    (async () => {
+      const L = (await import("leaflet")).default;
+      if (cancelled || !mapDiv.current) return;
+      LRef.current = L;
+      const map = L.map(mapDiv.current, { zoomControl: true, preferCanvas: true }).setView([20, 0], 3);
+      mapRef.current = map;
+      baseLayerRef.current = L.tileLayer(BASE_MAPS.dark.url, { attribution: BASE_MAPS.dark.attribution }).addTo(map);
+      drawLayerRef.current = L.featureGroup().addTo(map);
+      measureLayerRef.current = L.layerGroup().addTo(map);
+      map.on("click", (e: LType.LeafletMouseEvent) => {
+        setClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+        handleMapClick(e.latlng);
+      });
+    })();
+    return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !baseLayerRef.current) return;
+    const L = LRef.current;
+    if (!map || !baseLayerRef.current || !L) return;
     map.removeLayer(baseLayerRef.current);
     const cfg = BASE_MAPS[base];
     baseLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution }).addTo(map);
   }, [base]);
 
-  function handleMapClick(latlng: L.LatLng) {
+  function handleMapClick(latlng: LType.LatLng) {
     const map = mapRef.current;
     const draw = drawLayerRef.current;
-    if (!map || !draw) return;
+    const L = LRef.current;
+    if (!map || !draw || !L) return;
     const m = modeRef.current;
 
     if (m === "marker") {
