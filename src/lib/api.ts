@@ -49,7 +49,7 @@ export const api = {
       longitude,
     }),
   });
-},
+}},
   async history(): Promise<HistoryItem[]> {
     try { return await request<HistoryItem[]>("/history"); }
     catch { await delay(200); return mockHistory; }
