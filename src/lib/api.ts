@@ -41,11 +41,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 import { mockHistory, mockStats, mockPrediction } from "./mock-data";
 
 export const api = {
-  async predict(file: File): Promise<PredictionResult> {
-    await delay(1800);
-    const preview = file.type.startsWith("image/") ? URL.createObjectURL(file) : "";
-    return { ...mockPrediction(file.name), previewUrl: preview };
-  },
+  async analyze(latitude: number, longitude: number) {
+  return await request("/analyze", {
+    method: "POST",
+    body: JSON.stringify({
+      latitude,
+      longitude,
+    }),
+  });
+},
   async history(): Promise<HistoryItem[]> {
     try { return await request<HistoryItem[]>("/history"); }
     catch { await delay(200); return mockHistory; }
