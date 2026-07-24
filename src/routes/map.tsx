@@ -50,6 +50,7 @@ function MapPage() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [click, setClick] = useState<{ lat: number; lng: number } | null>(null);
   const [overlays, setOverlays] = useState({
     roads: false, rivers: false, forest: false, cities: false, admin: false,
   });
