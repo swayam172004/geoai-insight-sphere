@@ -68,10 +68,34 @@ function MapPage() {
       baseLayerRef.current = L.tileLayer(BASE_MAPS.dark.url, { attribution: BASE_MAPS.dark.attribution }).addTo(map);
       drawLayerRef.current = L.featureGroup().addTo(map);
       measureLayerRef.current = L.layerGroup().addTo(map);
-      map.on("click", (e: LType.LeafletMouseEvent) => {
-        setClick({ lat: e.latlng.lat, lng: e.latlng.lng });
-        handleMapClick(e.latlng);
-      });
+      map.on("click", async (e: L.LeafletMouseEvent) => {
+    const latitude = e.latlng.lat;
+    const longitude = e.latlng.lng;
+
+    setClick({
+        lat: latitude,
+        lng: longitude,
+    });
+
+    handleMapClick(e.latlng);
+
+    try {
+        setLoading(true);
+
+        const result = await api.analyze(latitude, longitude);
+
+        console.log(result);
+
+        setAnalysis(result);
+
+        toast.success("Analysis completed");
+    } catch (err) {
+        console.error(err);
+        toast.error("Backend connection failed");
+    } finally {
+        setLoading(false);
+    }
+});
     })();
     return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; };
   }, []);
