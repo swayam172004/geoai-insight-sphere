@@ -47,7 +47,8 @@ function MapPage() {
 
   const [base, setBase] = useState<BaseKey>("dark");
   const [mode, setMode] = useState<Mode>("none");
-  const [click, setClick] = useState<{ lat: number; lng: number } | null>(null);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [overlays, setOverlays] = useState({
     roads: false, rivers: false, forest: false, cities: false, admin: false,
