@@ -13,7 +13,7 @@ def init_earth_engine() -> None:
     global _ee_initialized
     if not _ee_initialized:
         try:
-            credentials = ee.ServiceAccountCredentials(AERVICE_ACCOUNT,KEY_PATH)
+            credentials = ee.ServiceAccountCredentials(SERVICE_ACCOUNT,KEY_PATH)
             if GEE_PROJECT_ID:
                 ee.Initialize(credentials,project=GEE_PROJECT_ID)
                 logger.info(f"Initialized GEE with project: {GEE_PROJECT_ID}")
