@@ -29,11 +29,11 @@ app.add_middleware(
 )
 
 # Include All Routers
-app.include_router(landcover.router)
-app.include_router(vegetation.router)
-app.include_router(terrain.router)
-app.include_router(weather.router)
-app.include_router(analysis.router)
+app.include_router(landcover.router, prefix="/api")
+app.include_router(vegetation.router, prefix="/api")
+app.include_router(terrain.router, prefix="/api")
+app.include_router(weather.router, prefix="/api")
+app.include_router(analysis.router, prefix="/api")
 
 @app.get("/")
 def root():
