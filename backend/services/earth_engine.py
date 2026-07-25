@@ -1,3 +1,4 @@
+import os
 import ee
 import logging
 from config import GEE_PROJECT_ID
@@ -5,6 +6,7 @@ from config import GEE_PROJECT_ID
 logger = logging.getLogger("geoai")
 _ee_initialized = False
 
+SERVICE_ACCOUNT = "geoai-earthengine@geoai-earthengine-503508.iam.gserviceaccount.com"
 def init_earth_engine() -> None:
     """Initializes Google Earth Engine with optional project ID from configuration."""
     global _ee_initialized
