@@ -30,12 +30,38 @@ export type StatsPayload = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    ...init,
-  });
-  if (!res.ok) throw new Error(`API ${path} failed: ${res.status}`);
-  return res.json() as Promise<T>;
+  const url = `${API_BASE_URL}${path}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      ...init,
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error(
+        `API request failed: ${res.status} ${res.statusText} — ${text}`
+      );
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new Error(`Invalid JSON response from ${url}: ${text}`);
+    }
+  } catch (error) {
+    console.error("Backend request error:", {
+      url,
+      error,
+    });
+
+    throw error;
+  }
 }
 
 import { mockHistory, mockStats, mockPrediction } from "./mock-data";
