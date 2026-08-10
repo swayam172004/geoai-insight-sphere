@@ -42,7 +42,7 @@ import { mockHistory, mockStats, mockPrediction } from "./mock-data";
 
 export const api = {
   async analyze(latitude: number, longitude: number) {
-  return await request("/analyze", {
+  return await request("/api/analyze", {
     method: "POST",
     body: JSON.stringify({
       latitude,
