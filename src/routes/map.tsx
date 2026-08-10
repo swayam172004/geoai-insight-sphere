@@ -11,7 +11,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { api } from "@/lib/api";
+import { API_BASE_URL } from "../lib/api";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
