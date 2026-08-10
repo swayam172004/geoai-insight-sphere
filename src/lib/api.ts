@@ -1,6 +1,6 @@
 export const API_BASE_URL =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
-  "/api";
+  (import.meta.env.VITE_API_BASE_URL as string)?.trim() ||
+  "https://geoai-insight-sphere.onrender.com";
 
 export type PredictionResult = {
   id: string;
