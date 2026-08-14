@@ -11,7 +11,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { API_BASE_URL } from "../lib/api";
+import { api } from "../lib/api";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -131,7 +131,7 @@ function MapPage() {
         L.marker(last, {
           icon: L.divIcon({
             className: "",
-            html: `<div style="background:oklch(0.14 0.03 265 / 0.9);color:#fff;padding:4px 8px;border-radius:9999px;font-size:11px;border:1px solid oklch(0.78 0.17 210);white-space:nowrap;">${(dist / 1000).toFixed(2)} km</div>`,
+            html: `<div style="background:oklch(0.14 0.03 265 / 0.9);color:#fff;padding:4px 8px;border-radius:9999px;font-size:11px;border:1px solid oklch(0.78 0.17 210);white-space:nowrap;">${(d[...]
           }),
         }).addTo(measureLayerRef.current!);
       }
@@ -231,9 +231,9 @@ function MapPage() {
         <GlassCard className="overflow-hidden p-0">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border/60 p-3">
             <div className="flex min-w-0 items-center gap-1">
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "marker")} onClick={() => setMode(mode === "marker" ? "none" : "marker")} aria-label="Marker"><MapPin className="h-4 w-4" /></Button>
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "measure")} onClick={() => { measurePointsRef.current = []; measureLayerRef.current?.clearLayers(); setMode(mode === "measure" ? "none" : "measure"); }} aria-label="Measure"><Ruler className="h-4 w-4" /></Button>
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "polygon")} onClick={() => { polyPointsRef.current = []; setMode(mode === "polygon" ? "none" : "polygon"); }} aria-label="Polygon"><Hexagon className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" className={toolBtn(mode === "marker")} onClick={() => setMode(mode === "marker" ? "none" : "marker")} aria-label="Marker"><MapPin className="h-4 [...]" />
+              <Button size="icon" variant="ghost" className={toolBtn(mode === "measure")} onClick={() => { measurePointsRef.current = []; measureLayerRef.current?.clearLayers(); setMode(mode === "measure" ? "none" : "measure"); }} aria-label="Measure"><Ruler className="h-4 w-4" />
+              <Button size="icon" variant="ghost" className={toolBtn(mode === "polygon")} onClick={() => { polyPointsRef.current = []; setMode(mode === "polygon" ? "none" : "polygon"); }} aria-label="Polygon"><Hexagon className="h-4 w-4" />
               {mode === "polygon" && <Button size="sm" variant="secondary" onClick={finishPolygon}>Finish</Button>}
               <Button size="icon" variant="ghost" className={toolBtn(mode === "rectangle")} onClick={() => setMode(mode === "rectangle" ? "none" : "rectangle")} aria-label="Rectangle"><Square className="h-4 w-4" /></Button>
               <Button size="icon" variant="ghost" onClick={clearAll} aria-label="Clear"><Trash2 className="h-4 w-4" /></Button>
