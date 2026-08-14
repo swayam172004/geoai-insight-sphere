@@ -17,7 +17,7 @@ def init_earth_engine() -> None:
     try:
         credentials_path = os.getenv(
             "GOOGLE_APPLICATION_CREDENTIALS",
-            "/etc/secrets/gee-service-account.json"
+            "/etc/secrets/service-account.json"
         )
 
         if not os.path.exists(credentials_path):
