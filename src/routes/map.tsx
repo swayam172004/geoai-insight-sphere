@@ -92,7 +92,7 @@ function MapPage() {
         toast.success("Analysis completed");
     } catch (err) {
         console.error(err);
-        toast.error(err);
+        toast.error('unable to connect with backend');
     } finally {
         setLoading(false);
     }
