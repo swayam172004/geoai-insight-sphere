@@ -1,10 +1,15 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
+from config import CORS_ORIGINS
 from routers import landcover, vegetation, terrain, weather, analysis
+from services.earth_engine import init_earth_engine, get_status
 
 # Configure Logging
 logging.basicConfig(
@@ -13,17 +18,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger("geoai")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialise Earth Engine at startup so credential problems show up in the logs
+    # immediately. The API still starts if it fails; /health reports the reason.
+    try:
+        await asyncio.to_thread(init_earth_engine)
+    except Exception as e:
+        logger.error(f"Earth Engine not ready at startup: {e}")
+    yield
+
+
 app = FastAPI(
     title="GeoAI Earth Intelligence Platform API",
     version="1.0.0",
-    description="Modular, production-ready FastAPI backend for Google Earth Engine."
+    description="Modular, production-ready FastAPI backend for Google Earth Engine.",
+    lifespan=lifespan,
 )
 
 # CORS Setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=CORS_ORIGINS != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -42,6 +59,13 @@ def root():
         "service": "GeoAI Earth Intelligence Platform API",
         "documentation": "/docs"
     }
+
+@app.get("/health")
+def health():
+    """Cheap wake-up/health endpoint. Always 200; 'degraded' means Earth Engine is not ready."""
+    ee_status = get_status()
+    return {"status": "ok" if ee_status["initialized"] else "degraded", "earth_engine": ee_status}
+
 
 # Graceful Exception Handlers (Never crash or expose tracebacks)
 @app.exception_handler(RequestValidationError)

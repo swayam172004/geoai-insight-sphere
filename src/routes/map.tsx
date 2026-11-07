@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type * as LType from "leaflet";
 import { motion } from "framer-motion";
 import {
-  Maximize2, Ruler, Square, Hexagon, Search, Download, Layers, MapPin, Trash2,
+  Maximize2, Ruler, Square, Hexagon, Search, Download, Layers, MapPin, Trash2, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { api } from "../lib/api";
+import { api, type AnalysisResult } from "../lib/api";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -47,7 +47,7 @@ function MapPage() {
 
   const [base, setBase] = useState<BaseKey>("dark");
   const [mode, setMode] = useState<Mode>("none");
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [click, setClick] = useState<{ lat: number; lng: number } | null>(null);
@@ -56,6 +56,9 @@ function MapPage() {
   });
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
+
+  // Wake the backend as soon as the page opens, so the first click is not slow.
+  useEffect(() => { api.health().catch(() => {}); }, []);
 
   useEffect(() => {
     if (!mapDiv.current || mapRef.current) return;
@@ -70,33 +73,25 @@ function MapPage() {
       drawLayerRef.current = L.featureGroup().addTo(map);
       measureLayerRef.current = L.layerGroup().addTo(map);
       map.on("click", async (e: L.LeafletMouseEvent) => {
-    const latitude = e.latlng.lat;
-    const longitude = e.latlng.lng;
+        const { lat: latitude, lng: longitude } = e.latlng;
+        setClick({ lat: latitude, lng: longitude });
+        handleMapClick(e.latlng);
 
-    setClick({
-        lat: latitude,
-        lng: longitude,
-    });
+        // Measure / polygon / rectangle clicks are drawing, not analysis requests.
+        if (modeRef.current !== "none" && modeRef.current !== "marker") return;
 
-    handleMapClick(e.latlng);
-
-    try {
-        setLoading(true);
-
-        const result = await api.analyze(latitude, longitude);
-
-        console.log(result);
-
-        setAnalysis(result);
-
-        toast.success("Analysis completed");
-    } catch (err) {
-        console.error(err);
-        toast.error('unable to connect with backend');
-    } finally {
-        setLoading(false);
-    }
-});
+        try {
+          setLoading(true);
+          const result = await api.analyze(latitude, longitude);
+          setAnalysis(result);
+          toast.success("Analysis completed");
+        } catch (err) {
+          console.error(err);
+          toast.error("Analysis failed", { description: (err as Error).message });
+        } finally {
+          setLoading(false);
+        }
+      });
     })();
     return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; };
   }, []);
@@ -117,14 +112,19 @@ function MapPage() {
     if (!map || !draw || !L) return;
     const m = modeRef.current;
 
+    const labelStyle =
+      "background:oklch(0.14 0.03 265 / 0.9);color:#fff;padding:4px 8px;border-radius:9999px;font-size:11px;border:1px solid oklch(0.78 0.17 210);white-space:nowrap;";
+
     if (m === "marker") {
-      L.marker(last, {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="background:oklch(0.14 0.03 265 / 0.9);color:#fff;padding:4px 8px;border-radius:9999px;font-size:11px;border:1px solid oklch(0.78 0.17 210);white-space:nowrap;">${(dist / 1000).toFixed(2)} km</div>`,
-        }),
-      }).addTo(measureLayerRef.current!);
-      L.polyline(pts, { color: "#38bdf8", weight: 3, dashArray: "6 6" }).addTo(measureLayerRef.current!);
+      L.marker(latlng).addTo(draw);
+    } else if (m === "measure") {
+      const measureLayer = measureLayerRef.current;
+      if (!measureLayer) return;
+      measurePointsRef.current.push(latlng);
+      const pts = measurePointsRef.current;
+      measureLayer.clearLayers();
+      pts.forEach((p) => L.circleMarker(p, { radius: 4, color: "#38bdf8", fillOpacity: 1 }).addTo(measureLayer));
+      L.polyline(pts, { color: "#38bdf8", weight: 3, dashArray: "6 6" }).addTo(measureLayer);
       if (pts.length >= 2) {
         let dist = 0;
         for (let i = 1; i < pts.length; i++) dist += pts[i - 1].distanceTo(pts[i]);
@@ -132,9 +132,9 @@ function MapPage() {
         L.marker(last, {
           icon: L.divIcon({
             className: "",
-            html: '<div style="background:oklch(0.14 0.03 265 / 0.9);color:#fff;padding:4px 8px;border-radius:9999px;font-size:11px;border:1px solid oklch(0.78 0.17 210);white-space:nowrap;">'
+            html: `<div style="${labelStyle}">${(dist / 1000).toFixed(2)} km</div>`,
           }),
-        }).addTo(measureLayerRef.current!);
+        }).addTo(measureLayer);
       }
     } else if (m === "polygon") {
       polyPointsRef.current.push(latlng);
@@ -232,9 +232,9 @@ function MapPage() {
         <GlassCard className="overflow-hidden p-0">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border/60 p-3">
             <div className="flex min-w-0 items-center gap-1">
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "marker")} onClick={() => setMode(mode === "marker" ? "none" : "marker")} aria-label="Marker"><MapPin className="h-4 w-4" />
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "measure")} onClick={() => { measurePointsRef.current = []; measureLayerRef.current?.clearLayers(); setMode(mode === "measure" ? "none" : "measure"); }} aria-label="Measure"><Ruler className="h-4 w-4" />
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "polygon")} onClick={() => { polyPointsRef.current = []; setMode(mode === "polygon" ? "none" : "polygon"); }} aria-label="Polygon"><Hexagon className="h-4 w-4" />
+              <Button size="icon" variant="ghost" className={toolBtn(mode === "marker")} onClick={() => setMode(mode === "marker" ? "none" : "marker")} aria-label="Marker"><MapPin className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" className={toolBtn(mode === "measure")} onClick={() => { measurePointsRef.current = []; measureLayerRef.current?.clearLayers(); setMode(mode === "measure" ? "none" : "measure"); }} aria-label="Measure"><Ruler className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" className={toolBtn(mode === "polygon")} onClick={() => { polyPointsRef.current = []; setMode(mode === "polygon" ? "none" : "polygon"); }} aria-label="Polygon"><Hexagon className="h-4 w-4" /></Button>
               {mode === "polygon" && <Button size="sm" variant="secondary" onClick={finishPolygon}>Finish</Button>}
               <Button size="icon" variant="ghost" className={toolBtn(mode === "rectangle")} onClick={() => setMode(mode === "rectangle" ? "none" : "rectangle")} aria-label="Rectangle"><Square className="h-4 w-4" /></Button>
               <Button size="icon" variant="ghost" onClick={clearAll} aria-label="Clear"><Trash2 className="h-4 w-4" /></Button>
@@ -269,6 +269,33 @@ function MapPage() {
         </GlassCard>
 
         <div className="space-y-4">
+          <GlassCard>
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              <MapPin className="h-4 w-4 text-primary" /> Location Analysis
+              {loading && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+            </div>
+            {analysis ? (
+              <div className="space-y-2 text-sm">
+                <div className="text-base font-semibold">{analysis.land_cover}</div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
+                  <span>NDVI</span><span className="text-foreground">{analysis.ndvi.toFixed(3)}</span>
+                  <span>NDWI</span><span className="text-foreground">{analysis.ndwi.toFixed(3)}</span>
+                  <span>NDBI</span><span className="text-foreground">{analysis.ndbi.toFixed(3)}</span>
+                  <span>Elevation</span><span className="text-foreground">{analysis.elevation.toFixed(0)} m</span>
+                  <span>Slope</span><span className="text-foreground">{analysis.slope.toFixed(1)}°</span>
+                  <span>Temperature</span><span className="text-foreground">{analysis.temperature.toFixed(1)} °C</span>
+                  <span>Humidity</span><span className="text-foreground">{analysis.humidity.toFixed(0)} %</span>
+                  <span>Rainfall (12 mo)</span><span className="text-foreground">{analysis.rainfall.toFixed(0)} mm</span>
+                </div>
+                <p className="pt-2 text-xs text-muted-foreground">{analysis.summary}</p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {loading ? "Analyzing this location… the first request can take up to a minute." : "Click anywhere on the map to analyze that location."}
+              </p>
+            )}
+          </GlassCard>
+
           <GlassCard>
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
               <Layers className="h-4 w-4 text-primary" /> Base Map

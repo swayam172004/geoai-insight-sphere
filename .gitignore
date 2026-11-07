@@ -33,3 +33,18 @@ dist-ssr
 
 backend/.env
 backend/service-account.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Env files / secrets
+.env
+.env.*
+!.env.example
+src/.env
+backend/.env
+backend/service-account.json
+*service-account*.json
