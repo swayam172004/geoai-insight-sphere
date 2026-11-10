@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel
 
 class LandCoverResponse(BaseModel):
@@ -48,3 +50,11 @@ class AnalysisResponse(BaseModel):
     humidity: float
     rainfall: float
     summary: str
+
+
+class ClassificationResponse(BaseModel):
+    class_id: int
+    class_name: str
+    confidence: float
+    probabilities: dict[str, float]
+    model_info: dict[str, Any]

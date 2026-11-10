@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from config import CORS_ORIGINS
-from routers import landcover, vegetation, terrain, weather, analysis
+from routers import landcover, vegetation, terrain, weather, analysis, classify
 from services.earth_engine import init_earth_engine, get_status
 
 # Configure Logging
@@ -51,6 +51,7 @@ app.include_router(vegetation.router, prefix="/api")
 app.include_router(terrain.router, prefix="/api")
 app.include_router(weather.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
+app.include_router(classify.router, prefix="/api")
 
 @app.get("/")
 def root():

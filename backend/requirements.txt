@@ -3,3 +3,5 @@ uvicorn[standard]>=0.27.0
 earthengine-api>=0.1.388
 pydantic>=2.6.0
 python-dotenv>=1.0.1
+numpy>=1.26
+onnxruntime>=1.17

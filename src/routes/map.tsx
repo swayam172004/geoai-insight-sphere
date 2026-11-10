@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type * as LType from "leaflet";
 import { motion } from "framer-motion";
 import {
-  Maximize2, Ruler, Square, Hexagon, Search, Download, Layers, MapPin, Trash2, Loader2,
+  Maximize2, Ruler, Square, Hexagon, Search, Download, Layers, MapPin, Trash2, Loader2, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { api, type AnalysisResult } from "../lib/api";
+import { api, type AnalysisResult, type ClassificationResult } from "../lib/api";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -49,6 +49,10 @@ function MapPage() {
   const [mode, setMode] = useState<Mode>("none");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [prediction, setPrediction] = useState<ClassificationResult | null>(null);
+  const [predError, setPredError] = useState<string | null>(null);
+  const [predicting, setPredicting] = useState(false);
+  const requestIdRef = useRef(0); // ignore answers to older clicks
   const [search, setSearch] = useState("");
   const [click, setClick] = useState<{ lat: number; lng: number } | null>(null);
   const [overlays, setOverlays] = useState({
@@ -80,17 +84,34 @@ function MapPage() {
         // Measure / polygon / rectangle clicks are drawing, not analysis requests.
         if (modeRef.current !== "none" && modeRef.current !== "marker") return;
 
-        try {
-          setLoading(true);
-          const result = await api.analyze(latitude, longitude);
-          setAnalysis(result);
-          toast.success("Analysis completed");
-        } catch (err) {
-          console.error(err);
-          toast.error("Analysis failed", { description: (err as Error).message });
-        } finally {
-          setLoading(false);
-        }
+        const reqId = ++requestIdRef.current;
+        const isCurrent = () => reqId === requestIdRef.current;
+        setLoading(true);
+        setPredicting(true);
+        setPrediction(null);
+        setPredError(null);
+
+        // Run the data analysis and the AI prediction at the same time.
+        const analysisJob = api
+          .analyze(latitude, longitude)
+          .then((result) => {
+            if (!isCurrent()) return;
+            setAnalysis(result);
+            toast.success("Analysis completed");
+          })
+          .catch((err) => {
+            console.error(err);
+            if (isCurrent()) toast.error("Analysis failed", { description: (err as Error).message });
+          })
+          .finally(() => { if (isCurrent()) setLoading(false); });
+
+        const predictionJob = api
+          .classify(latitude, longitude)
+          .then((result) => { if (isCurrent()) setPrediction(result); })
+          .catch((err) => { if (isCurrent()) setPredError((err as Error).message); })
+          .finally(() => { if (isCurrent()) setPredicting(false); });
+
+        await Promise.allSettled([analysisJob, predictionJob]);
       });
     })();
     return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; };
@@ -292,6 +313,48 @@ function MapPage() {
             ) : (
               <p className="text-xs text-muted-foreground">
                 {loading ? "Analyzing this location… the first request can take up to a minute." : "Click anywhere on the map to analyze that location."}
+              </p>
+            )}
+          </GlassCard>
+
+          <GlassCard>
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              <Sparkles className="h-4 w-4 text-primary" /> AI Land-Cover Prediction
+              {predicting && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+            </div>
+            {prediction ? (
+              <div className="space-y-2 text-sm">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-base font-semibold capitalize">{prediction.class_name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(prediction.confidence * 100).toFixed(0)}% confident
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {Object.entries(prediction.probabilities)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([name, p]) => (
+                      <div key={name} className="text-xs">
+                        <div className="flex justify-between text-muted-foreground">
+                          <span className="capitalize">{name}</span>
+                          <span>{(p * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted">
+                          <div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.round(p * 100)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                <p className="pt-1 text-xs text-muted-foreground">
+                  Sentinel-2, {prediction.model_info.bands.length} bands, {prediction.model_info.composite}.
+                </p>
+              </div>
+            ) : predError ? (
+              <p className="text-xs text-muted-foreground">Prediction unavailable: {predError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {predicting ? "Running the model on a Sentinel-2 patch…" : "Click the map to get the model’s land-cover prediction."}
               </p>
             )}
           </GlassCard>

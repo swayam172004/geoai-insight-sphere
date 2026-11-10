@@ -16,6 +16,14 @@ export type AnalysisResult = {
   summary: string;
 };
 
+export type ClassificationResult = {
+  class_id: number;
+  class_name: string;
+  confidence: number; // 0..1
+  probabilities: Record<string, number>;
+  model_info: { bands: string[]; patch_pixels: number; composite: string };
+};
+
 export type PredictionResult = {
   id: string;
   filename: string;
@@ -155,6 +163,14 @@ export const api = {
   // Wake the backend up (Render free tier sleeps) and report Earth Engine status.
   async health(): Promise<{ status: string; earth_engine: { initialized: boolean; error: string | null } }> {
     return request("/health", undefined, { timeoutMs: 90_000, retries: 0 });
+  },
+
+  // Real AI land-cover prediction (Sentinel-2 patch -> ONNX model on the backend).
+  async classify(latitude: number, longitude: number): Promise<ClassificationResult> {
+    return request<ClassificationResult>("/api/classify", {
+      method: "POST",
+      body: JSON.stringify({ latitude, longitude }),
+    });
   },
 
   async analyze(
