@@ -1,0 +1,3 @@
+bun update @tanstack/react-start \
+  @tanstack/react-router \
+  @tanstack/router-plugin
