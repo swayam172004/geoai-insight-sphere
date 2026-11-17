@@ -7,6 +7,7 @@ import {
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
+import { DemoBanner } from "@/components/ui/demo-banner";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/statistics")({
@@ -41,6 +42,7 @@ function StatsPage() {
         title="Prediction Statistics"
         description="Model performance and geospatial coverage across all processed scenes."
       />
+      <DemoBanner />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {totals.map((t, i) => (

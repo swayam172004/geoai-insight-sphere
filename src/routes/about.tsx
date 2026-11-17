@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Github, Linkedin, Satellite, Cpu, Rocket, Users } from "lucide-react";
+import { Github, Satellite, Cpu, Rocket, Layers } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -16,23 +16,24 @@ export const Route = createFileRoute("/about")({
 });
 
 const features = [
-  { icon: Satellite, title: "Multi-source Imagery", body: "Ingest Sentinel-2, Landsat, and custom TIFF/PNG/JPG scenes." },
-  { icon: Cpu, title: "State-of-the-art Models", body: "U-Net, DeepLabV3+, SegFormer, and Vision Transformers for segmentation." },
-  { icon: Rocket, title: "Real-time Inference", body: "Sub-2s predictions with GPU-accelerated FastAPI backend." },
-  { icon: Users, title: "Collaborative Workspace", body: "Share predictions, annotations, and geospatial exports with your team." },
+  { icon: Satellite, title: "Sentinel-2 via Earth Engine", body: "Pulls cloud-filtered Sentinel-2 imagery for any point on Earth through Google Earth Engine." },
+  { icon: Cpu, title: "Land-cover classifier", body: "A ResNet-18 trained on about 16,000 balanced patches from 8 world regions, served as an ONNX model." },
+  { icon: Rocket, title: "Environmental indicators", body: "NDVI, NDWI, NDBI, elevation, slope, temperature, humidity and rainfall for any clicked location." },
+  { icon: Layers, title: "Interactive map", body: "Click to analyze, measure distances, draw shapes, and switch between dark, satellite, street and terrain base maps." },
 ];
 
 const stack = [
-  "React", "TypeScript", "TailwindCSS", "shadcn/ui",
-  "Leaflet", "Recharts", "Framer Motion", "TanStack Router",
-  "FastAPI", "PyTorch", "Rasterio", "PostGIS",
+  "React", "TypeScript", "TanStack Start", "Tailwind CSS",
+  "shadcn/ui", "Leaflet", "Recharts", "Framer Motion",
+  "FastAPI", "Google Earth Engine", "PyTorch", "ONNX Runtime",
+  "Vercel", "Render",
 ];
 
 const roadmap = [
-  { q: "Q1", title: "Time-series analysis", body: "NDVI change detection over user-defined AOIs." },
-  { q: "Q2", title: "Custom model upload", body: "Bring your own ONNX/TorchScript model." },
-  { q: "Q3", title: "Collaborative annotations", body: "Multi-user labelling with real-time sync." },
-  { q: "Q4", title: "Enterprise SSO & audit", body: "SAML, RBAC, and full audit trails." },
+  { q: "Next", title: "6-band model", body: "Add shortwave-infrared bands to better separate bare ground, wetland and vegetation." },
+  { q: "Next", title: "Seasonal composites", body: "Use dry- and wet-season imagery to tell crops, grass and trees apart." },
+  { q: "Later", title: "Segmentation", body: "A U-Net that labels every pixel instead of one class per patch." },
+  { q: "Later", title: "Image upload", body: "Predict from user-supplied imagery with a model trained for it." },
 ];
 
 function AboutPage() {
@@ -41,7 +42,7 @@ function AboutPage() {
       <PageHeader
         eyebrow="About"
         title={<>The <span className="gradient-text">GeoAI</span> Earth Intelligence Platform</>}
-        description="An open, AI-first workspace for extracting insight from satellite imagery — built for researchers, analysts, and engineers."
+        description="A student project that turns Sentinel-2 satellite imagery into land-cover predictions and environmental indicators for any point on Earth."
       />
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -76,7 +77,7 @@ function AboutPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="mb-4 text-xl font-semibold">Future Roadmap</h2>
+        <h2 className="mb-4 text-xl font-semibold">Roadmap</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {roadmap.map((r) => (
             <GlassCard key={r.q}>
@@ -89,24 +90,17 @@ function AboutPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="mb-4 text-xl font-semibold">Team & Contact</h2>
+        <h2 className="mb-4 text-xl font-semibold">Source code</h2>
         <GlassCard className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="font-semibold">Built with care by the GeoAI team.</div>
-            <p className="text-sm text-muted-foreground">Open to collaborations, research partnerships, and pilots.</p>
+            <div className="font-semibold">Open source on GitHub.</div>
+            <p className="text-sm text-muted-foreground">The full pipeline is in the repository: data export, training, ONNX export, backend and frontend.</p>
           </div>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" className="rounded-full">
-              <a href="https://github.com" target="_blank" rel="noreferrer">
-                <Github className="mr-2 h-4 w-4" /> GitHub
-              </a>
-            </Button>
-            <Button asChild variant="outline" className="rounded-full">
-              <a href="https://linkedin.com" target="_blank" rel="noreferrer">
-                <Linkedin className="mr-2 h-4 w-4" /> LinkedIn
-              </a>
-            </Button>
-          </div>
+          <Button asChild variant="outline" className="rounded-full">
+            <a href="https://github.com/swayam172004/geoai-insight-sphere" target="_blank" rel="noreferrer">
+              <Github className="mr-2 h-4 w-4" /> View repository
+            </a>
+          </Button>
         </GlassCard>
       </section>
     </div>

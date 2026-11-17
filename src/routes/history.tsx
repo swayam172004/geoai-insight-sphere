@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
+import { DemoBanner } from "@/components/ui/demo-banner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +49,7 @@ function HistoryPage() {
         title="Prediction History"
         description="Every scene processed by GeoAI, searchable and filterable."
       />
+      <DemoBanner />
 
       <GlassCard>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">

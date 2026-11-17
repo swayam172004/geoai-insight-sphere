@@ -1,0 +1,8 @@
+# Only needed to reproduce the dataset and the model (not for the web app)
+earthengine-api
+tfrecord
+numpy
+torch
+torchvision
+onnx
+onnxruntime

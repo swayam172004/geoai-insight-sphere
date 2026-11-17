@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home,
@@ -15,6 +15,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
 
 const nav = [
   { to: "/", label: "Home", icon: Home },
@@ -96,6 +97,45 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+type BackendState = "checking" | "online" | "degraded" | "offline";
+
+const STATUS_COPY: Record<BackendState, { title: string; note: string; dot: string }> = {
+  checking: { title: "Checking backend…", note: "The first check can take up to a minute.", dot: "bg-slate-400" },
+  online: { title: "Backend online", note: "Earth Engine connected", dot: "bg-emerald-400" },
+  degraded: { title: "Backend online", note: "Earth Engine not ready", dot: "bg-amber-400" },
+  offline: { title: "Backend offline", note: "The free server may be asleep — reload in a minute.", dot: "bg-red-400" },
+};
+
+/** Real status of the FastAPI backend (GET /health), not a hardcoded badge. */
+function BackendStatus() {
+  const [state, setState] = useState<BackendState>("checking");
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .health()
+      .then((h) => { if (!cancelled) setState(h.status === "ok" ? "online" : "degraded"); })
+      .catch(() => { if (!cancelled) setState("offline"); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const c = STATUS_COPY[state];
+  return (
+    <div className="glass rounded-xl p-3">
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          {state === "online" && (
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          )}
+          <span className={`relative inline-flex h-2 w-2 rounded-full ${c.dot}`} />
+        </span>
+        <div className="text-xs font-semibold">{c.title}</div>
+      </div>
+      <div className="mt-1 text-[11px] text-muted-foreground">{c.note}</div>
+    </div>
+  );
+}
+
 function SidebarInner({
   pathname,
   onNavigate,
@@ -146,19 +186,7 @@ function SidebarInner({
         })}
       </nav>
       <div className="border-t border-border/60 p-4">
-        <div className="glass rounded-xl p-3">
-          <div className="text-xs font-semibold">System Online</div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            All AI models operational
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            <span className="text-[11px] text-muted-foreground">Live</span>
-          </div>
-        </div>
+        <BackendStatus />
       </div>
     </>
   );

@@ -55,7 +55,7 @@ function MapPage() {
   const requestIdRef = useRef(0); // ignore answers to older clicks
   const [search, setSearch] = useState("");
   const [click, setClick] = useState<{ lat: number; lng: number } | null>(null);
-  const [overlays, setOverlays] = useState({
+  const [overlays] = useState({
     roads: false, rivers: false, forest: false, cities: false, admin: false,
   });
 
@@ -228,12 +228,6 @@ function MapPage() {
     }
   };
 
-  const loadLayer = async (kind: "ndvi" | "landcover" | "sentinel" | "landsat" | "prediction") => {
-    toast.loading(`Loading ${kind}…`, { id: kind });
-    await api.mapLayer(kind);
-    toast.success(`${kind} layer ready (mock)`, { id: kind });
-  };
-
   const toolBtn = (active: boolean) => `rounded-lg ${active ? "bg-primary text-primary-foreground" : ""}`;
 
   return (
@@ -379,34 +373,28 @@ function MapPage() {
           </GlassCard>
 
           <GlassCard>
-            <div className="mb-3 text-sm font-semibold">Overlay Layers</div>
+            <div className="mb-3 flex items-center justify-between text-sm font-semibold">Overlay Layers <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Coming soon</span></div>
             <div className="space-y-3">
               {(Object.keys(overlays) as (keyof typeof overlays)[]).map((k) => (
                 <div key={k} className="flex items-center justify-between text-sm">
                   <span className="capitalize">{k}</span>
-                  <Switch
-                    checked={overlays[k]}
-                    onCheckedChange={(v) => {
-                      setOverlays((o) => ({ ...o, [k]: v }));
-                      toast.message(`${k} ${v ? "enabled" : "disabled"}`, { description: "Connect FastAPI to serve real tiles." });
-                    }}
-                  />
+                  <Switch checked={overlays[k]} disabled />
                 </div>
               ))}
             </div>
           </GlassCard>
 
           <GlassCard>
-            <div className="mb-3 text-sm font-semibold">Earth Observation</div>
+            <div className="mb-3 flex items-center justify-between text-sm font-semibold">Earth Observation <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Coming soon</span></div>
             <div className="grid grid-cols-2 gap-2">
               {(["ndvi", "landcover", "sentinel", "landsat", "prediction"] as const).map((k) => (
-                <Button key={k} size="sm" variant="outline" className="rounded-lg capitalize" onClick={() => loadLayer(k)}>
+                <Button key={k} size="sm" variant="outline" className="rounded-lg capitalize" disabled>
                   {k}
                 </Button>
               ))}
             </div>
             <div className="mt-3 text-[11px] text-muted-foreground">
-              Buttons call <code>/api/map/&lt;kind&gt;</code> — plug your FastAPI backend to serve real tiles or GeoJSON.
+              These layers are placeholders and will be connected in a later version.
             </div>
           </GlassCard>
         </div>

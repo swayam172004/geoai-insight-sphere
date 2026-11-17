@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Download, Loader2, ImageIcon, CheckCircle2, X } from "lucide-react";
@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
+import { DemoBanner } from "@/components/ui/demo-banner";
 import { Progress } from "@/components/ui/progress";
 import { api, type PredictionResult } from "@/lib/api";
 
@@ -64,8 +65,13 @@ function PredictPage() {
       <PageHeader
         eyebrow="AI Prediction"
         title="Analyze Satellite Imagery"
-        description="Upload a TIFF, PNG, or JPG scene. Our models return land-cover classes with per-class confidence."
+        description="Upload a scene to preview how results will look. (Demo — see the note below.)"
       />
+      <DemoBanner>
+        <strong className="font-semibold">Demo mode.</strong> Image upload is not connected to the model, so the results
+        below are sample data. The model needs Sentinel-2 bands, which a photo cannot provide. For real predictions, click
+        a location on the <Link to="/map" className="underline underline-offset-2">Map</Link> page.
+      </DemoBanner>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <GlassCard className="p-6">
