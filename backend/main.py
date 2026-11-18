@@ -2,6 +2,11 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
+import ee
+
+from fastapi import FastAPI, Request, HTTPException
+from config import CORS_ORIGINS, GEE_PROJECT_ID
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
