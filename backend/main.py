@@ -96,3 +96,30 @@ async def global_exception_handler(request: Request, exc: Exception):
             "error": "Internal server processing error. Please check server logs."
         }
     )
+
+@app.get("/api/earth-engine/test")
+def test_earth_engine():
+    try:
+        init_earth_engine()
+
+        # Execute a real Earth Engine computation
+        result = ee.Number(1).add(1).getInfo()
+
+        return {
+            "success": True,
+            "earth_engine": "connected",
+            "project_id": GEE_PROJECT_ID,
+            "computation_test": "passed",
+            "result": result
+        }
+
+    except Exception as e:
+        logger.exception("Earth Engine test failed")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "success": False,
+                "earth_engine": "unavailable",
+                "error": str(e)
+            }
+        )
