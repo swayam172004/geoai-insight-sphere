@@ -93,7 +93,9 @@ function MapPage() {
         setPredicting(true);
         setPrediction(null);
         setPredError(null);
-
+        setLandSurface(null);
+        setLandSurfaceLoading(true);
+        setLandSurfaceError(null);
         // Run the data analysis and the AI prediction at the same time.
         const analysisJob = api
           .analyze(latitude, longitude)
@@ -108,13 +110,19 @@ function MapPage() {
           })
           .finally(() => { if (isCurrent()) setLoading(false); });
 
-        const predictionJob = api
-          .classify(latitude, longitude)
-          .then((result) => { if (isCurrent()) setPrediction(result); })
-          .catch((err) => { if (isCurrent()) setPredError((err as Error).message); })
-          .finally(() => { if (isCurrent()) setPredicting(false); });
+        const landSurfaceJob = api
+          .landSurface(latitude, longitude, 1000)
+          .then((result) => {
+            if (isCurrent()) setLandSurface(result.data);
+          })
+          .catch((err) => {
+            if (isCurrent()) setLandSurfaceError((err as Error).message);
+          })
+          .finally(() => {
+            if (isCurrent()) setLandSurfaceLoading(false);
+          });
 
-        await Promise.allSettled([analysisJob, predictionJob]);
+        await Promise.allSettled([analysisJob, predictionJob,landSurfaceJob]);
       });
     })();
     return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; };
