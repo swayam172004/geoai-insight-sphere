@@ -5,6 +5,7 @@ from services.land_surface import (
     analyze_land_surface,
     analyze_land_surface_geometry,
 )
+
 router = APIRouter(prefix="/land-surface", tags=["Land Surface Analysis"])
 
 
@@ -14,12 +15,33 @@ class LandSurfaceRequest(BaseModel):
     radius_meters: int = Field(default=1000, ge=1, le=10000)
 
 
+class LandSurfaceGeometryRequest(BaseModel):
+    geometry: dict
+
+
 @router.post("/analyze")
 async def analyze_land_surface_route(request: LandSurfaceRequest):
     try:
         result = analyze_land_surface(
-            request.geometry
+            request.latitude,
+            request.longitude,
+            request.radius_meters,
         )
+        return {"status": "success", "data": result}
+
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/analyze-geometry")
+async def analyze_land_surface_geometry_route(
+    request: LandSurfaceGeometryRequest,
+):
+    try:
+        result = analyze_land_surface_geometry(request.geometry)
         return {"status": "success", "data": result}
 
     except ValueError as exc:
