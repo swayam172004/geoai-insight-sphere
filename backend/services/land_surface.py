@@ -1,7 +1,5 @@
-
 """
 Independent land-surface analysis service.
-This module is designed to operate without Google Earth Engine.
 """
 
 LAND_COVER_CLASSES = {
@@ -22,34 +20,27 @@ DEFAULT_RADIUS_METERS = 1000
 MAX_RADIUS_METERS = 10000
 
 
-def validate_coordinates(latitude: float, longitude: float):
+def validate_coordinates(latitude, longitude):
     if not -90 <= latitude <= 90:
-        raise ValueError("Latitude must be between -90 and 90.")
+        raise ValueError("Invalid latitude.")
 
     if not -180 <= longitude <= 180:
-        raise ValueError("Longitude must be between -180 and 180.")
+        raise ValueError("Invalid longitude.")
 
     return True
 
 
-def validate_radius(radius_meters: int):
+def validate_radius(radius_meters):
     if not isinstance(radius_meters, (int, float)):
         raise ValueError("Radius must be numeric.")
 
-    if radius_meters <= 0:
-        raise ValueError("Radius must be greater than zero.")
-
-    if radius_meters > MAX_RADIUS_METERS:
-        raise ValueError("Maximum analysis radius is 10 km.")
+    if radius_meters <= 0 or radius_meters > MAX_RADIUS_METERS:
+        raise ValueError("Radius must be between 1 and 10000 meters.")
 
     return True
 
 
-def create_analysis_request(
-    latitude: float,
-    longitude: float,
-    radius_meters: int = DEFAULT_RADIUS_METERS,
-):
+def create_analysis_request(latitude, longitude, radius_meters=DEFAULT_RADIUS_METERS):
     validate_coordinates(latitude, longitude)
     validate_radius(radius_meters)
 
