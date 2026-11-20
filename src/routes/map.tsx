@@ -201,10 +201,24 @@ function MapPage() {
   const clearAll = () => {
     drawLayerRef.current?.clearLayers();
     measureLayerRef.current?.clearLayers();
+  
     measurePointsRef.current = [];
     polyPointsRef.current = [];
     rectStartRef.current = null;
-    toast.success("Map cleared");
+  
+    requestIdRef.current++;
+  
+    setAnalysis(null);
+    setPrediction(null);
+    setPredError(null);
+    setLandSurface(null);
+    setLandSurfaceError(null);
+  
+    setLoading(false);
+    setPredicting(false);
+    setLandSurfaceLoading(false);
+  
+    toast.success("Map and analysis cleared");
   };
 
   const toggleFullscreen = () => {
