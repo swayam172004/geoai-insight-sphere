@@ -1,6 +1,12 @@
 """
 Independent land-surface analysis service.
+Uses raster data to calculate land-cover statistics.
 """
+
+import math
+import requests
+import rasterio
+from rasterio.windows import Window
 
 LAND_COVER_CLASSES = {
     10: "Tree Cover",
@@ -23,20 +29,16 @@ MAX_RADIUS_METERS = 10000
 def validate_coordinates(latitude, longitude):
     if not -90 <= latitude <= 90:
         raise ValueError("Invalid latitude.")
-
     if not -180 <= longitude <= 180:
         raise ValueError("Invalid longitude.")
-
     return True
 
 
 def validate_radius(radius_meters):
     if not isinstance(radius_meters, (int, float)):
         raise ValueError("Radius must be numeric.")
-
     if radius_meters <= 0 or radius_meters > MAX_RADIUS_METERS:
         raise ValueError("Radius must be between 1 and 10000 meters.")
-
     return True
 
 
