@@ -111,15 +111,15 @@ function MapPage() {
           .finally(() => { if (isCurrent()) setLoading(false); });
 
         const landSurfaceJob = api
-          .landSurface(latitude, longitude, 1000)
+          .classify(latitude, longitude)
           .then((result) => {
-            if (isCurrent()) setLandSurface(result.data);
+            if (isCurrent()) setPrediction(result);
           })
           .catch((err) => {
-            if (isCurrent()) setLandSurfaceError((err as Error).message);
+            if (isCurrent()) setPredError((err as Error).message);
           })
           .finally(() => {
-            if (isCurrent()) setLandSurfaceLoading(false);
+            if (isCurrent()) setPredicting(false);
           });
 
         await Promise.allSettled([analysisJob, predictionJob,landSurfaceJob]);
