@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from services.land_surface import analyze_land_surface
-
+from services.land_surface import (
+    analyze_land_surface,
+    analyze_land_surface_geometry,
+)
 router = APIRouter(prefix="/land-surface", tags=["Land Surface Analysis"])
 
 
@@ -16,9 +18,7 @@ class LandSurfaceRequest(BaseModel):
 async def analyze_land_surface_route(request: LandSurfaceRequest):
     try:
         result = analyze_land_surface(
-            request.latitude,
-            request.longitude,
-            request.radius_meters,
+            request.geometry
         )
         return {"status": "success", "data": result}
 
