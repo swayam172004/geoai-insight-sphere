@@ -1,11 +1,12 @@
 """
 Independent land-surface analysis using ESA WorldCover 2021.
 """
-
 import math
 import numpy as np
 import rasterio
 from rasterio.windows import from_bounds
+from rasterio.features import geometry_mask
+from shapely.geometry import shape
 
 LAND_COVER_CLASSES = {
     10: "Tree Cover",
