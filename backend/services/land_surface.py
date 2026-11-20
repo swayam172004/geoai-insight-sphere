@@ -174,3 +174,102 @@ def analyze_land_surface(latitude, longitude, radius_meters=1000):
         "total_pixels": total_pixels,
         "land_cover": results,
     }
+    def analyze_land_surface_geometry(geometry):
+    """
+        Analyze ESA WorldCover pixels inside a GeoJSON Polygon
+        or MultiPolygon geometry.
+        """
+        geom = shape(geometry)
+    
+        if geom.geom_type not in ("Polygon", "MultiPolygon"):
+            raise ValueError("Only Polygon and MultiPolygon geometries are supported.")
+    
+        if geom.is_empty or not geom.is_valid:
+            raise ValueError("Invalid or empty geometry.")
+    
+        west, south, east, north = geom.bounds
+    
+        if abs(south) >= 85 or abs(north) >= 85:
+            raise ValueError("Analysis is not supported near the poles.")
+    
+        center_lat = (south + north) / 2
+        center_lon = (west + east) / 2
+    
+        tile = get_tile_name(center_lat, center_lon)
+    
+        url = (
+            f"{BASE_URL}/ESA_WorldCover_10m_2021_v200_"
+            f"{tile}_Map.tif"
+        )
+    
+        with rasterio.open("/vsicurl/" + url) as src:
+            window = from_bounds(
+                west,
+                south,
+                east,
+                north,
+                transform=src.transform,
+            )
+    
+            window = window.round_offsets().round_lengths()
+    
+            data = src.read(1, window=window)
+            transform = src.window_transform(window)
+    
+            inside_geometry = geometry_mask(
+                [geom.__geo_interface__],
+                out_shape=data.shape,
+                transform=transform,
+                invert=True,
+            )
+    
+        if data.size == 0:
+            raise ValueError("No raster pixels found.")
+    
+        values = data[inside_geometry]
+        values = values[values != 0]
+    
+        if values.size == 0:
+            raise ValueError("No valid land-cover pixels found.")
+    
+        unique_values, counts = np.unique(
+            values,
+            return_counts=True,
+        )
+    
+        total_pixels = int(values.size)
+        results = []
+    
+        for value, count in zip(unique_values, counts):
+            class_value = int(value)
+            pixel_count = int(count)
+    
+            results.append({
+                "class_code": class_value,
+                "class_name": LAND_COVER_CLASSES.get(
+                    class_value,
+                    "Unknown",
+                ),
+                "pixel_count": pixel_count,
+                "area_km2": round(
+                    pixel_count * 100 / 1_000_000,
+                    4,
+                ),
+                "percentage": round(
+                    pixel_count / total_pixels * 100,
+                    2,
+                ),
+            })
+    
+        results.sort(
+            key=lambda item: item["percentage"],
+            reverse=True,
+        )
+    
+        return {
+            "geometry_type": geom.geom_type,
+            "source": "ESA WorldCover 2021 v200",
+            "tile": tile,
+            "total_pixels": total_pixels,
+            "land_cover": results,
+        }
