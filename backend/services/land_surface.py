@@ -1,12 +1,11 @@
 """
-Independent land-surface analysis service.
-Uses raster data to calculate land-cover statistics.
+Independent land-surface analysis using ESA WorldCover 2021.
 """
 
 import math
-import requests
+import numpy as np
 import rasterio
-from rasterio.windows import Window
+from rasterio.windows import from_bounds
 
 LAND_COVER_CLASSES = {
     10: "Tree Cover",
@@ -25,6 +24,8 @@ LAND_COVER_CLASSES = {
 DEFAULT_RADIUS_METERS = 1000
 MAX_RADIUS_METERS = 10000
 
+BASE_URL = "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map"
+
 
 def validate_coordinates(latitude, longitude):
     if not -90 <= latitude <= 90:
@@ -42,13 +43,140 @@ def validate_radius(radius_meters):
     return True
 
 
-def create_analysis_request(latitude, longitude, radius_meters=DEFAULT_RADIUS_METERS):
+def get_tile_name(latitude, longitude):
+    lat_corner = math.floor(latitude / 3) * 3
+    lon_corner = math.floor(longitude / 3) * 3
+
+    lat_prefix = "N" if lat_corner >= 0 else "S"
+    lon_prefix = "E" if lon_corner >= 0 else "W"
+
+    lat_value = abs(lat_corner)
+    lon_value = abs(lon_corner)
+
+    return (
+        f"{lat_prefix}{lat_value:02d}"
+        f"{lon_prefix}{lon_value:03d}"
+    )
+
+
+def analyze_land_surface(latitude, longitude, radius_meters=1000):
     validate_coordinates(latitude, longitude)
     validate_radius(radius_meters)
+
+    if abs(latitude) >= 85:
+        raise ValueError("Analysis is not supported near the poles.")
+
+    tile = get_tile_name(latitude, longitude)
+
+    url = (
+        f"{BASE_URL}/ESA_WorldCover_10m_2021_v200_"
+        f"{tile}_Map.tif"
+    )
+
+    lat_delta = radius_meters / 111320
+
+    lon_delta = radius_meters / (
+        111320 * math.cos(math.radians(latitude))
+    )
+
+    west = longitude - lon_delta
+    east = longitude + lon_delta
+    south = latitude - lat_delta
+    north = latitude + lat_delta
+
+    with rasterio.open("/vsicurl/" + url) as src:
+
+        window = from_bounds(
+            west,
+            south,
+            east,
+            north,
+            transform=src.transform,
+        )
+
+        window = window.round_offsets().round_lengths()
+
+        data = src.read(1, window=window)
+
+        transform = src.window_transform(window)
+
+    if data.size == 0:
+        raise ValueError("No raster pixels found.")
+
+    rows, cols = np.indices(data.shape)
+
+    pixel_lon, pixel_lat = rasterio.transform.xy(
+        transform,
+        rows,
+        cols,
+        offset="center",
+    )
+
+    pixel_lon = np.asarray(pixel_lon)
+    pixel_lat = np.asarray(pixel_lat)
+
+    distance_x = (
+        (pixel_lon - longitude)
+        * 111320
+        * math.cos(math.radians(latitude))
+    )
+
+    distance_y = (pixel_lat - latitude) * 111320
+
+    inside_circle = (
+        distance_x**2 + distance_y**2
+        <= radius_meters**2
+    )
+
+    values = data[inside_circle]
+
+    values = values[values != 0]
+
+    if values.size == 0:
+        raise ValueError("No valid land-cover pixels found.")
+
+    unique_values, counts = np.unique(
+        values,
+        return_counts=True,
+    )
+
+    total_pixels = int(values.size)
+
+    results = []
+
+    for value, count in zip(unique_values, counts):
+
+        class_value = int(value)
+        pixel_count = int(count)
+
+        results.append({
+            "class_code": class_value,
+            "class_name": LAND_COVER_CLASSES.get(
+                class_value,
+                "Unknown",
+            ),
+            "pixel_count": pixel_count,
+            "area_km2": round(
+                pixel_count * 100 / 1_000_000,
+                4,
+            ),
+            "percentage": round(
+                pixel_count / total_pixels * 100,
+                2,
+            ),
+        })
+
+    results.sort(
+        key=lambda item: item["percentage"],
+        reverse=True,
+    )
 
     return {
         "latitude": latitude,
         "longitude": longitude,
         "radius_meters": radius_meters,
-        "land_cover_classes": LAND_COVER_CLASSES,
+        "source": "ESA WorldCover 2021 v200",
+        "tile": tile,
+        "total_pixels": total_pixels,
+        "land_cover": results,
     }
