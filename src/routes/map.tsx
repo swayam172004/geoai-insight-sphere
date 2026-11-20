@@ -395,6 +395,49 @@ function MapPage() {
             </div>
           </GlassCard>
 
+                    <GlassCard>
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              <Layers className="h-4 w-4 text-primary" /> Land Surface Analysis
+              {landSurfaceLoading && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+            </div>
+
+            {landSurface ? (
+              <div className="space-y-3 text-sm">
+                <div className="text-xs text-muted-foreground">
+                  {landSurface.source} · Radius: {landSurface.radius_meters} m
+                </div>
+
+                {landSurface.land_cover.map((item: any) => (
+                  <div key={item.class_code} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>{item.class_name}</span>
+                      <span>{item.percentage}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted">
+                      <div
+                        className="h-2 rounded-full bg-primary"
+                        style={{ width: `${item.percentage}%` }}
+                      />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {item.area_km2} km²
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : landSurfaceError ? (
+              <p className="text-xs text-muted-foreground">
+                Land surface analysis unavailable: {landSurfaceError}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {landSurfaceLoading
+                  ? "Processing satellite land-cover data…"
+                  : "Click the map to analyze land-cover distribution."}
+              </p>
+            )}
+          </GlassCard>
+          
           <GlassCard>
             <div className="mb-3 flex items-center justify-between text-sm font-semibold">Earth Observation <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Coming soon</span></div>
             <div className="grid grid-cols-2 gap-2">
