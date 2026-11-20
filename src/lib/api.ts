@@ -219,4 +219,31 @@ export const api = {
       url: "",
     };
   },
+    async landSurface(
+    latitude: number,
+    longitude: number,
+    radius_meters: number = 1000
+  ) {
+    return request<{
+      status: string;
+      data: {
+        latitude: number;
+        longitude: number;
+        radius_meters: number;
+        source: string;
+        tile: string;
+        total_pixels: number;
+        land_cover: {
+          class_code: number;
+          class_name: string;
+          pixel_count: number;
+          area_km2: number;
+          percentage: number;
+        }[];
+      };
+    }>("/api/land-surface/analyze", {
+      method: "POST",
+      body: JSON.stringify({ latitude, longitude, radius_meters }),
+    });
+  },
 };
