@@ -187,355 +187,49 @@ function MapPage() {
     }
   }
 
-  const finishPolygon = () => {
+    const finishPolygon = async () => {
     const draw = drawLayerRef.current;
-    if (!draw) return;
+    const L = LRef.current;
+    if (!draw || !L) return;
+
+    const points = [...polyPointsRef.current];
+
+    if (points.length < 3) {
+      toast.error("A polygon requires at least 3 points");
+      return;
+    }
+
+    const polygon = L.polygon(points);
+    const geometry = polygon.toGeoJSON().geometry;
+
     draw.eachLayer((l) => {
       const anyL = l as unknown as { _geoaiTemp?: boolean };
       if (anyL._geoaiTemp) anyL._geoaiTemp = false;
     });
+
     polyPointsRef.current = [];
     setMode("none");
-  };
-
-  const clearAll = () => {
-    drawLayerRef.current?.clearLayers();
-    measureLayerRef.current?.clearLayers();
-  
-    measurePointsRef.current = [];
-    polyPointsRef.current = [];
-    rectStartRef.current = null;
-  
-    requestIdRef.current++;
-  
-    setAnalysis(null);
-    setPrediction(null);
-    setPredError(null);
-    setLandSurface(null);
-    setLandSurfaceError(null);
-  
-    setLoading(false);
-    setPredicting(false);
-    setLandSurfaceLoading(false);
-  
-    toast.success("Map and analysis cleared");
-  };
-
-  const toggleFullscreen = () => {
-    const el = mapDiv.current?.parentElement;
-    if (!el) return;
-    if (!document.fullscreenElement) el.requestFullscreen?.();
-    else document.exitFullscreen?.();
-  };
-
-  const exportGeoJSON = () => {
-    const draw = drawLayerRef.current;
-    if (!draw) return;
-    const geo = draw.toGeoJSON();
-    const blob = new Blob([JSON.stringify(geo, null, 2)], { type: "application/geo+json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "geoai-export.geojson";
-    a.click();
-  };
-
-  const runSearch = async () => {
-  if (!search.trim()) return;
-
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(search)}`
-    );
-
-    const data = (await res.json()) as {
-      lat: string;
-      lon: string;
-      display_name: string;
-    }[];
-
-    if (!data.length) return toast.error("No location found");
-
-    const { lat, lon, display_name } = data[0];
-    const latitude = +lat;
-    const longitude = +lon;
-
-    mapRef.current?.flyTo([latitude, longitude], 10);
-    toast.success(display_name);
 
     const reqId = ++requestIdRef.current;
-    const isCurrent = () => reqId === requestIdRef.current;
 
-    setLoading(true);
-    setPredicting(true);
-    setPrediction(null);
-    setPredError(null);
     setLandSurface(null);
-    setLandSurfaceLoading(true);
     setLandSurfaceError(null);
+    setLandSurfaceLoading(true);
 
-    const analysisJob = api
-      .analyze(latitude, longitude)
-      .then((result) => {
-        if (isCurrent()) setAnalysis(result);
-      })
-      .catch((err) => {
-        if (isCurrent())
-          toast.error("Analysis failed", {
-            description: (err as Error).message,
-          });
-      })
-      .finally(() => {
-        if (isCurrent()) setLoading(false);
-      });
-
-    const predictionJob = api
-      .classify(latitude, longitude)
-      .then((result) => {
-        if (isCurrent()) setPrediction(result);
-      })
-      .catch((err) => {
-        if (isCurrent()) setPredError((err as Error).message);
-      })
-      .finally(() => {
-        if (isCurrent()) setPredicting(false);
-      });
-
-    const landSurfaceJob = api
-      .landSurface(latitude, longitude, 1000)
-      .then((result) => {
-        if (isCurrent()) setLandSurface(result.data);
-      })
-      .catch((err) => {
-        if (isCurrent()) setLandSurfaceError((err as Error).message);
-      })
-      .finally(() => {
-        if (isCurrent()) setLandSurfaceLoading(false);
-      });
-
-    await Promise.allSettled([
-      analysisJob,
-      predictionJob,
-      landSurfaceJob,
-    ]);
-  } catch {
-    toast.error("Search failed");
-  }
+    try {
+      const result = await api.landSurfaceGeometry(geometry);
+      if (reqId === requestIdRef.current) {
+        setLandSurface(result.data);
+        toast.success("Polygon land-cover analysis completed");
+      }
+    } catch (err) {
+      if (reqId === requestIdRef.current) {
+        setLandSurfaceError((err as Error).message);
+        toast.error("Polygon analysis failed");
+      }
+    } finally {
+      if (reqId === requestIdRef.current) {
+        setLandSurfaceLoading(false);
+      }
+    }
   };
-
-  const toolBtn = (active: boolean) => `rounded-lg ${active ? "bg-primary text-primary-foreground" : ""}`;
-
-  return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-10">
-      <PageHeader
-        eyebrow="Geospatial"
-        title="Interactive Map"
-        description="Draw, measure, and layer earth-observation data on a fully interactive canvas."
-        actions={
-          <Button onClick={exportGeoJSON} variant="outline" size="sm" className="rounded-full">
-            <Download className="mr-2 h-4 w-4" /> Export GeoJSON
-          </Button>
-        }
-      />
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <GlassCard className="overflow-hidden p-0">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border/60 p-3">
-            <div className="flex min-w-0 items-center gap-1">
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "marker")} onClick={() => setMode(mode === "marker" ? "none" : "marker")} aria-label="Marker"><MapPin className="h-4 w-4" /></Button>
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "measure")} onClick={() => { measurePointsRef.current = []; measureLayerRef.current?.clearLayers(); setMode(mode === "measure" ? "none" : "measure"); }} aria-label="Measure"><Ruler className="h-4 w-4" /></Button>
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "polygon")} onClick={() => { polyPointsRef.current = []; setMode(mode === "polygon" ? "none" : "polygon"); }} aria-label="Polygon"><Hexagon className="h-4 w-4" /></Button>
-              {mode === "polygon" && <Button size="sm" variant="secondary" onClick={finishPolygon}>Finish</Button>}
-              <Button size="icon" variant="ghost" className={toolBtn(mode === "rectangle")} onClick={() => setMode(mode === "rectangle" ? "none" : "rectangle")} aria-label="Rectangle"><Square className="h-4 w-4" /></Button>
-              <Button size="icon" variant="ghost" onClick={clearAll} aria-label="Clear"><Trash2 className="h-4 w-4" /></Button>
-              <Button size="icon" variant="ghost" onClick={toggleFullscreen} aria-label="Fullscreen"><Maximize2 className="h-4 w-4" /></Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative hidden sm:block">
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && runSearch()}
-                  placeholder="Search location…"
-                  className="h-9 w-56 rounded-full bg-background/50 pl-9"
-                />
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div ref={mapDiv} className="h-[68vh] min-h-[520px] w-full" />
-            {click && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="pointer-events-none absolute bottom-3 left-3 z-[400] rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs backdrop-blur"
-              >
-                {click.lat.toFixed(5)}, {click.lng.toFixed(5)}
-              </motion.div>
-            )}
-          </div>
-        </GlassCard>
-
-        <div className="space-y-4">
-          <GlassCard>
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <MapPin className="h-4 w-4 text-primary" /> Location Analysis
-              {loading && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
-            </div>
-            {analysis ? (
-              <div className="space-y-2 text-sm">
-                <div className="text-base font-semibold">{analysis.land_cover}</div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-                  <span>NDVI</span><span className="text-foreground">{analysis.ndvi.toFixed(3)}</span>
-                  <span>NDWI</span><span className="text-foreground">{analysis.ndwi.toFixed(3)}</span>
-                  <span>NDBI</span><span className="text-foreground">{analysis.ndbi.toFixed(3)}</span>
-                  <span>Elevation</span><span className="text-foreground">{analysis.elevation.toFixed(0)} m</span>
-                  <span>Slope</span><span className="text-foreground">{analysis.slope.toFixed(1)}°</span>
-                  <span>Temperature</span><span className="text-foreground">{analysis.temperature.toFixed(1)} °C</span>
-                  <span>Humidity</span><span className="text-foreground">{analysis.humidity.toFixed(0)} %</span>
-                  <span>Rainfall (12 mo)</span><span className="text-foreground">{analysis.rainfall.toFixed(0)} mm</span>
-                </div>
-                <p className="pt-2 text-xs text-muted-foreground">{analysis.summary}</p>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {loading ? "Analyzing this location… the first request can take up to a minute." : "Click anywhere on the map to analyze that location."}
-              </p>
-            )}
-          </GlassCard>
-
-          <GlassCard>
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <Sparkles className="h-4 w-4 text-primary" /> AI Land-Cover Prediction
-              {predicting && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
-            </div>
-            {prediction ? (
-              <div className="space-y-2 text-sm">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-base font-semibold capitalize">{prediction.class_name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {(prediction.confidence * 100).toFixed(0)}% confident
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {Object.entries(prediction.probabilities)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3)
-                    .map(([name, p]) => (
-                      <div key={name} className="text-xs">
-                        <div className="flex justify-between text-muted-foreground">
-                          <span className="capitalize">{name}</span>
-                          <span>{(p * 100).toFixed(0)}%</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-muted">
-                          <div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.round(p * 100)}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                </div>
-                <p className="pt-1 text-xs text-muted-foreground">
-                  Sentinel-2, {prediction.model_info.bands.length} bands, {prediction.model_info.composite}.
-                </p>
-              </div>
-            ) : predError ? (
-              <p className="text-xs text-muted-foreground">Prediction unavailable: {predError}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {predicting ? "Running the model on a Sentinel-2 patch…" : "Click the map to get the model’s land-cover prediction."}
-              </p>
-            )}
-          </GlassCard>
-
-          <GlassCard>
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <Layers className="h-4 w-4 text-primary" /> Base Map
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {(Object.keys(BASE_MAPS) as BaseKey[]).map((k) => (
-                <Button
-                  key={k}
-                  size="sm"
-                  variant={base === k ? "default" : "outline"}
-                  className="rounded-lg"
-                  onClick={() => setBase(k)}
-                >
-                  {BASE_MAPS[k].name}
-                </Button>
-              ))}
-            </div>
-          </GlassCard>
-
-          <GlassCard>
-            <div className="mb-3 flex items-center justify-between text-sm font-semibold">Overlay Layers <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Coming soon</span></div>
-            <div className="space-y-3">
-              {(Object.keys(overlays) as (keyof typeof overlays)[]).map((k) => (
-                <div key={k} className="flex items-center justify-between text-sm">
-                  <span className="capitalize">{k}</span>
-                  <Switch checked={overlays[k]} disabled />
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-
-                    <GlassCard>
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <Layers className="h-4 w-4 text-primary" /> Land Surface Analysis
-              {landSurfaceLoading && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
-            </div>
-
-            {landSurface ? (
-              <div className="space-y-3 text-sm">
-                <div className="text-xs text-muted-foreground">
-                  {landSurface.source} · Radius: {landSurface.radius_meters} m
-                </div>
-
-                {landSurface.land_cover.map((item: any) => (
-                  <div key={item.class_code} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span>{item.class_name}</span>
-                      <span>{item.percentage}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted">
-                      <div
-                        className="h-2 rounded-full bg-primary"
-                        style={{ width: `${item.percentage}%` }}
-                      />
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {item.area_km2} km²
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : landSurfaceError ? (
-              <p className="text-xs text-muted-foreground">
-                Land surface analysis unavailable: {landSurfaceError}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {landSurfaceLoading
-                  ? "Processing satellite land-cover data…"
-                  : "Click the map to analyze land-cover distribution."}
-              </p>
-            )}
-          </GlassCard>
-          
-          <GlassCard>
-            <div className="mb-3 flex items-center justify-between text-sm font-semibold">Earth Observation <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Coming soon</span></div>
-            <div className="grid grid-cols-2 gap-2">
-              {(["ndvi", "landcover", "sentinel", "landsat", "prediction"] as const).map((k) => (
-                <Button key={k} size="sm" variant="outline" className="rounded-lg capitalize" disabled>
-                  {k}
-                </Button>
-              ))}
-            </div>
-            <div className="mt-3 text-[11px] text-muted-foreground">
-              These layers are placeholders and will be connected in a later version.
-            </div>
-          </GlassCard>
-        </div>
-      </div>
-    </div>
-  );
-}
