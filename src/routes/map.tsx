@@ -226,17 +226,86 @@ function MapPage() {
   };
 
   const runSearch = async () => {
-    if (!search.trim()) return;
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(search)}`);
-      const data = (await res.json()) as { lat: string; lon: string; display_name: string }[];
-      if (!data.length) return toast.error("No location found");
-      const { lat, lon, display_name } = data[0];
-      mapRef.current?.flyTo([+lat, +lon], 10);
-      toast.success(display_name);
-    } catch {
-      toast.error("Search failed");
-    }
+  if (!search.trim()) return;
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(search)}`
+    );
+
+    const data = (await res.json()) as {
+      lat: string;
+      lon: string;
+      display_name: string;
+    }[];
+
+    if (!data.length) return toast.error("No location found");
+
+    const { lat, lon, display_name } = data[0];
+    const latitude = +lat;
+    const longitude = +lon;
+
+    mapRef.current?.flyTo([latitude, longitude], 10);
+    toast.success(display_name);
+
+    const reqId = ++requestIdRef.current;
+    const isCurrent = () => reqId === requestIdRef.current;
+
+    setLoading(true);
+    setPredicting(true);
+    setPrediction(null);
+    setPredError(null);
+    setLandSurface(null);
+    setLandSurfaceLoading(true);
+    setLandSurfaceError(null);
+
+    const analysisJob = api
+      .analyze(latitude, longitude)
+      .then((result) => {
+        if (isCurrent()) setAnalysis(result);
+      })
+      .catch((err) => {
+        if (isCurrent())
+          toast.error("Analysis failed", {
+            description: (err as Error).message,
+          });
+      })
+      .finally(() => {
+        if (isCurrent()) setLoading(false);
+      });
+
+    const predictionJob = api
+      .classify(latitude, longitude)
+      .then((result) => {
+        if (isCurrent()) setPrediction(result);
+      })
+      .catch((err) => {
+        if (isCurrent()) setPredError((err as Error).message);
+      })
+      .finally(() => {
+        if (isCurrent()) setPredicting(false);
+      });
+
+    const landSurfaceJob = api
+      .landSurface(latitude, longitude, 1000)
+      .then((result) => {
+        if (isCurrent()) setLandSurface(result.data);
+      })
+      .catch((err) => {
+        if (isCurrent()) setLandSurfaceError((err as Error).message);
+      })
+      .finally(() => {
+        if (isCurrent()) setLandSurfaceLoading(false);
+      });
+
+    await Promise.allSettled([
+      analysisJob,
+      predictionJob,
+      landSurfaceJob,
+    ]);
+  } catch {
+    toast.error("Search failed");
+  }
   };
 
   const toolBtn = (active: boolean) => `rounded-lg ${active ? "bg-primary text-primary-foreground" : ""}`;
