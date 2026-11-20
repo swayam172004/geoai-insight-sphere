@@ -48,6 +48,9 @@ function MapPage() {
   const [base, setBase] = useState<BaseKey>("dark");
   const [mode, setMode] = useState<Mode>("none");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [landSurface, setLandSurface] = useState<any>(null);
+  const [landSurfaceLoading, setLandSurfaceLoading] = useState(false);
+  const [landSurfaceError, setLandSurfaceError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState<ClassificationResult | null>(null);
   const [predError, setPredError] = useState<string | null>(null);
