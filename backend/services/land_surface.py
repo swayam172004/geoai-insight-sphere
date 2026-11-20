@@ -174,7 +174,7 @@ def analyze_land_surface(latitude, longitude, radius_meters=1000):
         "total_pixels": total_pixels,
         "land_cover": results,
     }
-    def analyze_land_surface_geometry(geometry):
+def analyze_land_surface_geometry(geometry):
     """
         Analyze ESA WorldCover pixels inside a GeoJSON Polygon
         or MultiPolygon geometry.
