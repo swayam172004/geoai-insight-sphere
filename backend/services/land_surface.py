@@ -105,15 +105,8 @@ def analyze_land_surface(latitude, longitude, radius_meters=1000):
 
     rows, cols = np.indices(data.shape)
 
-    pixel_lon, pixel_lat = rasterio.transform.xy(
-        transform,
-        rows,
-        cols,
-        offset="center",
-    )
-
-    pixel_lon = np.asarray(pixel_lon)
-    pixel_lat = np.asarray(pixel_lat)
+    pixel_lon = transform.c + (cols + 0.5) * transform.a
+    pixel_lat = transform.f + (rows + 0.5) * transform.e
 
     distance_x = (
         (pixel_lon - longitude)
