@@ -48,9 +48,6 @@ function MapPage() {
   const [base, setBase] = useState<BaseKey>("dark");
   const [mode, setMode] = useState<Mode>("none");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [landSurface, setLandSurface] = useState<any>(null);
-  const [landSurfaceLoading, setLandSurfaceLoading] = useState(false);
-  const [landSurfaceError, setLandSurfaceError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState<ClassificationResult | null>(null);
   const [predError, setPredError] = useState<string | null>(null);
@@ -193,50 +190,3 @@ function MapPage() {
       }
     }
   }
-
-    const finishPolygon = async () => {
-    const draw = drawLayerRef.current;
-    const L = LRef.current;
-    if (!draw || !L) return;
-
-    const points = [...polyPointsRef.current];
-
-    if (points.length < 3) {
-      toast.error("A polygon requires at least 3 points");
-      return;
-    }
-
-    const polygon = L.polygon(points);
-    const geometry = polygon.toGeoJSON().geometry;
-
-    draw.eachLayer((l) => {
-      const anyL = l as unknown as { _geoaiTemp?: boolean };
-      if (anyL._geoaiTemp) anyL._geoaiTemp = false;
-    });
-
-    polyPointsRef.current = [];
-    setMode("none");
-
-    const reqId = ++requestIdRef.current;
-
-    setLandSurface(null);
-    setLandSurfaceError(null);
-    setLandSurfaceLoading(true);
-
-    try {
-      const result = await api.landSurfaceGeometry(geometry);
-      if (reqId === requestIdRef.current) {
-        setLandSurface(result.data);
-        toast.success("Polygon land-cover analysis completed");
-      }
-    } catch (err) {
-      if (reqId === requestIdRef.current) {
-        setLandSurfaceError((err as Error).message);
-        toast.error("Polygon analysis failed");
-      }
-    } finally {
-      if (reqId === requestIdRef.current) {
-        setLandSurfaceLoading(false);
-      }
-    }
-  };
