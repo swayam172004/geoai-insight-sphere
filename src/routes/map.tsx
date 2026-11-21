@@ -111,7 +111,7 @@ function MapPage() {
           })
           .finally(() => { if (isCurrent()) setLoading(false); });
 
-        const landSurfaceJob = api
+        const predictionjob = api
           .classify(latitude, longitude)
           .then((result) => {
             if (isCurrent()) setPrediction(result);
