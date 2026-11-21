@@ -106,7 +106,8 @@ function MapPage() {
           })
           .catch((err) => {
             console.error(err);
-            if (isCurrent()) toast.error("Analysis failed", { description: (err as Error).message });
+            if (isCurrent()) { toast.error("Analysis failed", { description: (err as Error).message, });
+                             }
           })
           .finally(() => { if (isCurrent()) setLoading(false); });
 
@@ -144,7 +145,6 @@ function MapPage() {
           landSurfaceJob,
         ]);
 
-        await Promise.allSettled([analysisJob, predictionJob,landSurfaceJob]);
       });
     })();
     return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; };
