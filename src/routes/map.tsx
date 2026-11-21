@@ -122,6 +122,28 @@ function MapPage() {
             if (isCurrent()) setPredicting(false);
           });
 
+        const landSurfaceJob = api
+          .landSurface(latitude, longitude)
+          .then((result) => {
+            if (!isCurrent()) return;
+            setLandSurface(result.data);
+          })
+          .catch((err) => {
+            if (isCurrent()) {
+              setLandSurfaceError((err as Error).message);
+              console.error("Land surface analysis failed:", err);
+            }
+          })
+          .finally(() => {
+            if (isCurrent()) setLandSurfaceLoading(false);
+          });
+
+        await Promise.allSettled([
+          analysisJob,
+          predictionJob,
+          landSurfaceJob,
+        ]);
+
         await Promise.allSettled([analysisJob, predictionJob,landSurfaceJob]);
       });
     })();
