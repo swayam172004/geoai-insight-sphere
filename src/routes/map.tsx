@@ -90,9 +90,6 @@ function MapPage() {
         setPredicting(true);
         setPrediction(null);
         setPredError(null);
-        setLandSurface(null);
-        setLandSurfaceLoading(true);
-        setLandSurfaceError(null);
         // Run the data analysis and the AI prediction at the same time.
         const analysisJob = api
           .analyze(latitude, longitude)
