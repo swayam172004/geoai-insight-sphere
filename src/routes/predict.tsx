@@ -146,6 +146,7 @@ function PredictPage() {
               ONNX land-cover model.
             </p>
           </div>
+          {classification && (
           <div className="rounded-lg bg-muted/40 p-4">
             <div className="text-xs text-muted-foreground">
               Analyzed Location
@@ -153,7 +154,7 @@ function PredictPage() {
             <div className="mt-2 font-mono text-sm">
               {latitude}, {longitude}
             </div>
-          </div>
+          </div>)}
            <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Latitude</label>
