@@ -58,17 +58,11 @@ function PredictPage() {
   }, []);
 
   const runPrediction = async () => {
-    if (!file) return;
-    setLoading(true);
-    try {
-      const r = await api.predict(file);
-      setResult(r);
-      toast.success("Prediction complete", { description: `${r.landCover} · ${(r.confidence * 100).toFixed(1)}%` });
-    } catch (e) {
-      toast.error("Prediction failed", { description: (e as Error).message });
-    } finally {
-      setLoading(false);
-    }
+  if (!file) return;
+
+  toast.info("Image prediction is not connected yet", {
+    description: "Real satellite analysis is currently available on the Map page.",
+   });
   };
 
   const reset = () => { setFile(null); setPreview(null); setResult(null); };
@@ -187,10 +181,10 @@ function PredictPage() {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button
                   onClick={runPrediction}
-                  disabled={loading}
+                  disabled={true}
                   className="rounded-full bg-[image:var(--gradient-primary)] text-primary-foreground"
                 >
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing</> : "Run Prediction"}
+                  Image Prediction Unavailable
                 </Button>
                 {result && (
                   <Button onClick={downloadResult} variant="outline" className="rounded-full">
