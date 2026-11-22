@@ -8,8 +8,6 @@ import {
   History,
   Info,
   Menu,
-  Bell,
-  Settings,
   Globe2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -80,16 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" aria-label="Notifications">
-              <Bell className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" aria-label="Settings">
-              <Settings className="h-4 w-4" />
-            </Button>
-            <div className="ml-1 grid h-9 w-9 place-items-center rounded-full bg-[image:var(--gradient-primary)] text-xs font-semibold text-primary-foreground">
-              GA
             </div>
-          </div>
         </header>
         <main className="min-w-0 flex-1">{children}</main>
       </div>
