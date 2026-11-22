@@ -208,7 +208,24 @@ function PredictPage() {
                   Classification Result
                 </h3>
               </div>
-
+              <div className="space-y-3">
+                        <h3 className="text-sm font-semibold">Location Preview</h3>
+                      
+                        <div className="overflow-hidden rounded-xl border border-border">
+                          <iframe
+                            title="Classified Location Map"
+                            width="100%"
+                            height="300"
+                            loading="lazy"
+                            src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(longitude) - 0.01}%2C${Number(latitude) - 0.01}%2C${Number(longitude) + 0.01}%2C${Number(latitude) + 0.01}&layer=mapnik&marker=${latitude}%2C${longitude}`}
+                            className="w-full"
+                          />
+                        </div>
+                      
+                        <p className="text-xs text-muted-foreground">
+                          Sentinel-2 classification location
+                        </p>
+                      </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-lg bg-muted/40 p-4">
                   <div className="text-xs text-muted-foreground">
