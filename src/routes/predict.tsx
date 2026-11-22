@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useCallback,useEffect } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, ImageIcon, X } from "lucide-react";
+import { Upload, Download, Loader2, ImageIcon, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { DemoBanner } from "@/components/ui/demo-banner";
+import { Progress } from "@/components/ui/progress";
+import { api, type PredictionResult } from "@/lib/api";
 
 export const Route = createFileRoute("/predict")({
   head: () => ({
@@ -21,38 +23,43 @@ export const Route = createFileRoute("/predict")({
 function PredictPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<PredictionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  useEffect(() => {
-  return () => {
-    if (preview) {
-      URL.revokeObjectURL(preview);
-    }
-   };
-  }, [preview]);
+
   const handleFile = useCallback((f: File) => {
-  const allowedExtensions = /\.(png|jpe?g|tif|tiff)$/i;
-  const isValidImage =
-    (f.type.startsWith("image/")||f.type=="") && allowedExtensions.test(f.name);
-
-  if (!isValidImage) {
-    toast.error("Unsupported file", {
-      description: "Please upload PNG, JPG, or TIFF images.",
-    });
-    return;
-  }
-
-  if (f.size > 10 * 1024 * 1024) {
-    toast.error("File too large", {
-      description: "Maximum upload size is 10 MB.",
-    });
-    return;
-  }
-
-  setFile(f);
-  setPreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
+    setFile(f);
+    setResult(null);
+    setPreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
   }, []);
 
-  
+  const runPrediction = async () => {
+    if (!file) return;
+    setLoading(true);
+    try {
+      const r = await api.predict(file);
+      setResult(r);
+      toast.success("Prediction complete", { description: `${r.landCover} · ${(r.confidence * 100).toFixed(1)}%` });
+    } catch (e) {
+      toast.error("Prediction failed", { description: (e as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reset = () => { setFile(null); setPreview(null); setResult(null); };
+
+  const downloadResult = () => {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${result.filename}.prediction.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-10">
       <PageHeader
@@ -93,8 +100,7 @@ function PredictPage() {
                 type="file"
                 accept=".tif,.tiff,image/png,image/jpeg,image/tiff"
                 className="absolute inset-0 cursor-pointer opacity-0"
-                onChange={(e) => { const selectedFile = e.target.files?.[0]; if (selectedFile) handleFile(selectedFile);
-                                 e.target.value="";}}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
               />
             </label>
           ) : (
@@ -128,7 +134,13 @@ function PredictPage() {
                   <div className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Prediction</div>
                   <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-muted/40">
                     <AnimatePresence mode="wait">
-                      { result ? (
+                      {loading ? (
+                        <motion.div key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 text-primary">
+                          <Loader2 className="h-8 w-8 animate-spin" />
+                          <div className="text-xs uppercase tracking-widest">Analyzing scene…</div>
+                          <ScanLines />
+                        </motion.div>
+                      ) : result ? (
                         <motion.div key="r" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0">
                           {preview && <img src={preview} alt="" className="h-full w-full object-cover" />}
                           <div className="absolute inset-0 mix-blend-screen" style={{
@@ -150,10 +162,10 @@ function PredictPage() {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button
                   onClick={runPrediction}
-                  disabled={true}
+                  disabled={loading}
                   className="rounded-full bg-[image:var(--gradient-primary)] text-primary-foreground"
                 >
-                  Image Prediction Unavailable
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing</> : "Run Prediction"}
                 </Button>
                 {result && (
                   <Button onClick={downloadResult} variant="outline" className="rounded-full">
