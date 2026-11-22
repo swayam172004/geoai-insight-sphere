@@ -68,7 +68,11 @@ function PredictPage() {
       setClassifying(false);
     }
   };
-
+  const clearClassification = () => {
+  setLatitude("");
+  setLongitude("");
+  setClassification(null);
+  };
   const handleFile = useCallback((f: File) => {
     setFile(f);
     setResult(null);
@@ -142,8 +146,15 @@ function PredictPage() {
               ONNX land-cover model.
             </p>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg bg-muted/40 p-4">
+            <div className="text-xs text-muted-foreground">
+              Analyzed Location
+            </div>
+            <div className="mt-2 font-mono text-sm">
+              {latitude}, {longitude}
+            </div>
+          </div>
+           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Latitude</label>
               <input
@@ -267,6 +278,13 @@ function PredictPage() {
               >
                 <Download className="mr-2 h-4 w-4" />
                 Download Classification JSON
+              </Button>
+              <Button
+                variant="outline"
+                onClick={clearClassification}
+                className="w-full rounded-full"
+              >
+                New Analysis
               </Button>
             </motion.div>
           )}
