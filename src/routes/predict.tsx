@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DemoBanner } from "@/components/ui/demo-banner";
 import { Progress } from "@/components/ui/progress";
 import { api, type PredictionResult } from "@/lib/api";
+import { api, type ClassificationResult } from "@/lib/api";
 
 export const Route = createFileRoute("/predict")({
   head: () => ({
@@ -26,7 +27,43 @@ function PredictPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [classifying, setClassifying] = useState(false);
+  const [classification, setClassification] = useState<ClassificationResult | null>(null);
 
+  const handleClassification = async () => {
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+
+  if (
+    latitude.trim() === "" ||
+    longitude.trim() === "" ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180
+  ) {
+    alert("Please enter valid latitude and longitude.");
+    return;
+  }
+
+  setClassifying(true);
+  setClassification(null);
+
+  try {
+    const result = await api.classify(lat, lon);
+    setClassification(result);
+  } catch (error) {
+    console.error("Classification failed:", error);
+    alert("Classification failed. Please check backend availability.");
+  } finally {
+    setClassifying(false);
+  }
+  };
+  
   const handleFile = useCallback((f: File) => {
     setFile(f);
     setResult(null);
