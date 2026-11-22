@@ -1,14 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback,useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Download, ImageIcon, CheckCircle2, X } from "lucide-react";
+import { Upload, ImageIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { DemoBanner } from "@/components/ui/demo-banner";
-import { Progress } from "@/components/ui/progress";
-import { api, type PredictionResult } from "@/lib/api";
 
 export const Route = createFileRoute("/predict")({
   head: () => ({
@@ -23,7 +21,6 @@ export const Route = createFileRoute("/predict")({
 function PredictPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [result, setResult] = useState<PredictionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
   useEffect(() => {
   return () => {
@@ -52,31 +49,10 @@ function PredictPage() {
   }
 
   setFile(f);
-  setResult(null);
   setPreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
   }, []);
 
-  const runPrediction = async () => {
-  if (!file) return;
-
-  toast.info("Image prediction is not connected yet", {
-    description: "Real satellite analysis is currently available on the Map page.",
-   });
-  };
-
-  const reset = () => { setFile(null); setPreview(null); setResult(null); };
-
-  const downloadResult = () => {
-    if (!result) return;
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${result.filename}.prediction.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
+  
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-10">
       <PageHeader
