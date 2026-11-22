@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback,useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Download, Loader2, ImageIcon, CheckCircle2, X } from "lucide-react";
+import { Upload, Download, ImageIcon, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -23,7 +23,6 @@ export const Route = createFileRoute("/predict")({
 function PredictPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
   useEffect(() => {
@@ -153,13 +152,7 @@ function PredictPage() {
                   <div className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Prediction</div>
                   <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-muted/40">
                     <AnimatePresence mode="wait">
-                      {loading ? (
-                        <motion.div key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 text-primary">
-                          <Loader2 className="h-8 w-8 animate-spin" />
-                          <div className="text-xs uppercase tracking-widest">Analyzing scene…</div>
-                          <ScanLines />
-                        </motion.div>
-                      ) : result ? (
+                      { result ? (
                         <motion.div key="r" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0">
                           {preview && <img src={preview} alt="" className="h-full w-full object-cover" />}
                           <div className="absolute inset-0 mix-blend-screen" style={{
