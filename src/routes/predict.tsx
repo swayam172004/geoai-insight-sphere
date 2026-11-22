@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useCallback } from "react";
+import { useState, useCallback,useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Download, Loader2, ImageIcon, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -26,11 +26,35 @@ function PredictPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
-
+  useEffect(() => {
+  return () => {
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+   };
+  }, [preview]);
   const handleFile = useCallback((f: File) => {
-    setFile(f);
-    setResult(null);
-    setPreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
+  const allowedExtensions = /\.(png|jpe?g|tif|tiff)$/i;
+  const isValidImage =
+    (f.type.startsWith("image/")||f.type=="") && allowedExtensions.test(f.name);
+
+  if (!isValidImage) {
+    toast.error("Unsupported file", {
+      description: "Please upload PNG, JPG, or TIFF images.",
+    });
+    return;
+  }
+
+  if (f.size > 10 * 1024 * 1024) {
+    toast.error("File too large", {
+      description: "Maximum upload size is 10 MB.",
+    });
+    return;
+  }
+
+  setFile(f);
+  setResult(null);
+  setPreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
   }, []);
 
   const runPrediction = async () => {
