@@ -124,7 +124,8 @@ function PredictPage() {
                 type="file"
                 accept=".tif,.tiff,image/png,image/jpeg,image/tiff"
                 className="absolute inset-0 cursor-pointer opacity-0"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+                onChange={(e) => { const selectedFile = e.target.files?.[0]; if (selectedFile) handleFile(selectedFile);
+                                 e.target.value="";}}
               />
             </label>
           ) : (
